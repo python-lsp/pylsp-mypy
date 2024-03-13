@@ -120,6 +120,21 @@ With ``report_progress`` your config could look like this:
         "report_progress": True
     }
 
+Configuration via LSP (see `python-lsp-server's configuration`_ documentation) is also supported with options taking the ``pylsp.plugins.pylsp_mypy`` prefix.  For example using ``neovim``:
+
+::
+
+    pylsp = {
+      plugins = {
+        pylsp_mypy = {
+          enabled = true,
+          live_mode = false,
+          dmypy = true,
+          strict = false,
+        },
+      }
+    }
+
 Developing
 -------------
 
@@ -148,4 +163,5 @@ After that pre-commit will run `all defined hooks`_ on every ``git commit`` and 
 .. _rst-linter: https://github.com/Lucas-C/pre-commit-hooks-markup
 .. _rstcheck: https://github.com/myint/rstcheck
 .. _pre-commit: https://pre-commit.com/
+.. _python-lsp-server's configuration: https://github.com/python-lsp/python-lsp-server/#configuration
 .. _all defined hooks: .pre-commit-config.yaml
