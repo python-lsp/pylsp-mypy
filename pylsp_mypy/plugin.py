@@ -301,7 +301,7 @@ def get_diagnostics(
     exit_status = 0
 
     if not dmypy:
-        args.extend(["--incremental", "--follow-imports", "silent"])
+        args.extend(["--incremental"])
         args = apply_overrides(args, overrides)
 
         if shutil.which("mypy"):
