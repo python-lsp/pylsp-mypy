@@ -9,6 +9,7 @@ Created on Fri Jul 10 09:53:57 2020
 import ast
 import atexit
 import collections
+import json
 import logging
 import os
 import os.path
@@ -17,6 +18,7 @@ import shutil
 import subprocess
 import tempfile
 from configparser import ConfigParser
+from functools import lru_cache
 from pathlib import Path
 from typing import IO, Any, Dict, List, Optional
 
@@ -223,6 +225,23 @@ def pylsp_lint(
         return get_diagnostics(workspace, document, settings, is_saved)
 
 
+@lru_cache(maxsize=2000)
+def get_venv_cmd(path: str, workspace: str) -> List[str]:
+    if not shutil.which("get-venv.py"):
+        return []
+    try:
+        p = subprocess.run(
+            ["get-venv.py", json.dumps(dict(cmd=["mypy"], path=path, workspace=workspace))],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return json.loads(p.stdout)["cmd"]  # type: ignore
+    except subprocess.CalledProcessError as e:
+        log.warning("Error calling get-venv.py: %s", str(e))
+        return []
+
+
 def get_diagnostics(
     workspace: Workspace,
     document: Document,
@@ -304,12 +323,15 @@ def get_diagnostics(
         args.extend(["--incremental", "--follow-imports", settings.get("follow-imports", "silent")])
         args = apply_overrides(args, overrides)
 
-        if shutil.which("mypy"):
+        cmd = get_venv_cmd(str(document.path), str(workspace.root_path))
+        if not cmd and shutil.which("mypy"):
+            cmd = ["mypy"]
+        if cmd:
             # mypy exists on path
             # -> use mypy on path
             log.info("executing mypy args = %s on path", args)
             completed_process = subprocess.run(
-                ["mypy", *args], capture_output=True, **windows_flag, encoding="utf-8"
+                [*cmd, *args], capture_output=True, **windows_flag, encoding="utf-8"
             )
             report = completed_process.stdout
             errors = completed_process.stderr
