@@ -78,6 +78,16 @@ Configuration
      - ``normal``, ``silent``, ``skip`` or ``error``
      - ``mypy`` **parameter** ``follow-imports``. In ``mypy`` this is ``normal`` by default. We set it ``silent``, to sort out unwanted results. This can cause cash invalidation if you also run ``mypy`` in other ways. Setting this to ``normal`` avoids this at the cost of a small performance penalty.
      - ``silent``
+   * - ``mypy_command``
+     - ``pylsp.plugins.pylsp_mypy.mypy_command``
+     - ``array`` of ``string`` items
+     - **The command to run mypy**. This is useful if you want to run mypy in a specific virtual environment.
+     - ``[]``
+   * - ``dmypy_command``
+     - ``pylsp.plugins.pylsp_mypy.dmypy_command``
+     - ``array`` of ``string`` items
+     - **The command to run dmypy**. This is useful if you want to run dmypy in a specific virtual environment.
+     - ``[]``
 
 Using a ``pyproject.toml`` for configuration, which is in fact the preferred way, your configuration could look like this:
 
@@ -149,6 +159,26 @@ With ``report_progress`` your config could look like this:
     {
         "enabled": True,
         "report_progress": True
+    }
+
+With ``mypy_command`` your config could look like this:
+
+::
+
+    {
+        "enabled": True,
+        "mypy_command": ["poetry", "run", "mypy"]
+    }
+
+With ``dmypy_command`` your config could look like this:
+
+::
+
+    {
+        "enabled": True,
+        "live_mode": False,
+        "dmypy": True,
+        "dmypy_command": ["/path/to/venv/bin/dmypy"]
     }
 
 Developing

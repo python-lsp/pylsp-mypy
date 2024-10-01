@@ -165,6 +165,24 @@ def match_exclude_patterns(document_path: str, exclude_patterns: list) -> bool:
     return False
 
 
+def get_cmd(settings: Dict[str, Any], cmd: str) -> List[str]:
+    """Get the command to run from settings, falling back to searching the PATH.
+
+    If the command is not found in the settings and is not available on the PATH, an
+    empty list is returned.
+    """
+    command_key = f"{cmd}_command"
+    command: List[str] = settings.get(command_key, [])
+
+    if not command and shutil.which(cmd):
+        log.debug("'%s' not found in settings, using '%s' from PATH", command_key, cmd)
+        command = [cmd]
+
+    log.debug("Using %s command: %s", cmd, command)
+
+    return command
+
+
 @hookimpl
 def pylsp_lint(
     config: Config, workspace: Workspace, document: Document, is_saved: bool
@@ -304,12 +322,14 @@ def get_diagnostics(
         args.extend(["--incremental", "--follow-imports", settings.get("follow-imports", "silent")])
         args = apply_overrides(args, overrides)
 
-        if shutil.which("mypy"):
+        mypy_cmd = get_cmd(settings, "mypy")
+
+        if mypy_cmd:
             # mypy exists on path
             # -> use mypy on path
             log.info("executing mypy args = %s on path", args)
             completed_process = subprocess.run(
-                ["mypy", *args], capture_output=True, **windows_flag, encoding="utf-8"
+                [*mypy_cmd, *args], capture_output=True, **windows_flag, encoding="utf-8"
             )
             report = completed_process.stdout
             errors = completed_process.stderr
@@ -326,11 +346,13 @@ def get_diagnostics(
         # If daemon is dead/absent, kill will no-op.
         # In either case, reset to fresh state
 
-        if shutil.which("dmypy"):
+        dmypy_cmd = get_cmd(settings, "dmypy")
+
+        if dmypy_cmd:
             # dmypy exists on path
             # -> use dmypy on path
             completed_process = subprocess.run(
-                ["dmypy", "--status-file", dmypy_status_file, "status"],
+                [*dmypy_cmd, "--status-file", dmypy_status_file, "status"],
                 capture_output=True,
                 **windows_flag,
                 encoding="utf-8",
@@ -344,7 +366,7 @@ def get_diagnostics(
                     errors.strip(),
                 )
                 subprocess.run(
-                    ["dmypy", "--status-file", dmypy_status_file, "restart"],
+                    [*dmypy_cmd, "--status-file", dmypy_status_file, "restart"],
                     capture_output=True,
                     **windows_flag,
                     encoding="utf-8",
@@ -365,12 +387,12 @@ def get_diagnostics(
 
         # run to use existing daemon or restart if required
         args = ["--status-file", dmypy_status_file, "run", "--"] + apply_overrides(args, overrides)
-        if shutil.which("dmypy"):
+        if dmypy_cmd:
             # dmypy exists on path
             # -> use mypy on path
             log.info("dmypy run args = %s via path", args)
             completed_process = subprocess.run(
-                ["dmypy", *args], capture_output=True, **windows_flag, encoding="utf-8"
+                [*dmypy_cmd, *args], capture_output=True, **windows_flag, encoding="utf-8"
             )
             report = completed_process.stdout
             errors = completed_process.stderr

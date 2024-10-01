@@ -383,3 +383,89 @@ def test_config_exclude(tmpdir, workspace):
     workspace.update_config({"pylsp": {"plugins": {"pylsp_mypy": {"exclude": [exclude_path]}}}})
     diags = plugin.pylsp_lint(workspace._config, workspace, doc, is_saved=False)
     assert diags == []
+
+
+@pytest.mark.parametrize(
+    ("command", "settings", "cmd_on_path", "expected"),
+    [
+        ("mypy", {}, ["/bin/mypy"], ["mypy"]),
+        ("mypy", {}, None, []),
+        ("mypy", {"mypy_command": ["/path/to/mypy"]}, "/bin/mypy", ["/path/to/mypy"]),
+        ("mypy", {"mypy_command": ["/path/to/mypy"]}, None, ["/path/to/mypy"]),
+        ("dmypy", {}, "/bin/dmypy", ["dmypy"]),
+        ("dmypy", {}, None, []),
+        ("dmypy", {"dmypy_command": ["/path/to/dmypy"]}, "/bin/dmypy", ["/path/to/dmypy"]),
+        ("dmypy", {"dmypy_command": ["/path/to/dmypy"]}, None, ["/path/to/dmypy"]),
+    ],
+)
+def test_get_cmd(command, settings, cmd_on_path, expected):
+    with patch("shutil.which", return_value=cmd_on_path):
+        assert plugin.get_cmd(settings, command) == expected
+
+
+def test_config_overrides_mypy_command(last_diagnostics_monkeypatch, workspace):
+    last_diagnostics_monkeypatch.setattr(
+        FakeConfig,
+        "plugin_settings",
+        lambda _, p: (
+            {
+                "mypy_command": ["/path/to/mypy"],
+            }
+            if p == "pylsp_mypy"
+            else {}
+        ),
+    )
+
+    m = Mock(wraps=lambda a, **_: Mock(returncode=0, **{"stdout": ""}))
+    last_diagnostics_monkeypatch.setattr(plugin.subprocess, "run", m)
+
+    document = Document(DOC_URI, workspace, DOC_TYPE_ERR)
+
+    config = FakeConfig(uris.to_fs_path(workspace.root_uri))
+    plugin.pylsp_settings(config)
+
+    plugin.pylsp_lint(
+        config=config,
+        workspace=workspace,
+        document=document,
+        is_saved=False,
+    )
+
+    called_argv = m.call_args.args[0]
+    called_cmd = called_argv[0]
+    assert called_cmd == "/path/to/mypy"
+
+
+def test_config_overrides_dmypy_command(last_diagnostics_monkeypatch, workspace):
+    last_diagnostics_monkeypatch.setattr(
+        FakeConfig,
+        "plugin_settings",
+        lambda _, p: (
+            {
+                "dmypy": True,
+                "live_mode": False,
+                "dmypy_command": ["poetry", "run", "dmypy"],
+            }
+            if p == "pylsp_mypy"
+            else {}
+        ),
+    )
+
+    m = Mock(wraps=lambda a, **_: Mock(returncode=0, **{"stdout": ""}))
+    last_diagnostics_monkeypatch.setattr(plugin.subprocess, "run", m)
+
+    document = Document(DOC_URI, workspace, DOC_TYPE_ERR)
+
+    config = FakeConfig(uris.to_fs_path(workspace.root_uri))
+    plugin.pylsp_settings(config)
+
+    plugin.pylsp_lint(
+        config=config,
+        workspace=workspace,
+        document=document,
+        is_saved=False,
+    )
+
+    called_argv = m.call_args.args[0]
+    called_cmd = called_argv[:3]
+    assert called_cmd == ["poetry", "run", "dmypy"]
