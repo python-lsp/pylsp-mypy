@@ -83,6 +83,24 @@ def test_plugin(workspace, last_diagnostics_monkeypatch):
     assert diag["code"] == "attr-defined"
 
 
+@pytest.mark.parametrize("doc_source", ["a = 1\nb\n", "a = 1\r\nb\r\n", "a = 1\rb\r"])
+def test_handling_of_line_endings(workspace, last_diagnostics_monkeypatch, doc_source):
+    # setup
+    doc = Document(DOC_URI, workspace, doc_source)
+    plugin.pylsp_settings(workspace._config)
+
+    # run
+    diags = plugin.pylsp_lint(workspace._config, workspace, doc, is_saved=False)
+
+    # assert
+    undefined_name_diags = list(filter(lambda diag: diag["code"] == "name-defined", diags))
+    assert len(undefined_name_diags) == 1
+    diag = undefined_name_diags[0]
+    assert diag["message"] == 'Name "b" is not defined'
+    assert diag["range"]["start"] == {"line": 1, "character": 0}
+    assert diag["range"]["end"] == {"line": 1, "character": 1}
+
+
 def test_parse_full_line(workspace):
     diag = plugin.parse_line(TEST_LINE)  # TODO parse a document here
     assert diag["message"] == '"Request" has no attribute "id"'

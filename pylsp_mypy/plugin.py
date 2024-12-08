@@ -51,7 +51,7 @@ mypyConfigFileMap: Dict[str, Optional[str]] = {}
 
 settingsCache: Dict[str, Dict[str, Any]] = {}
 
-tmpFile: Optional[IO[str]] = None
+tmpFile: Optional[IO[bytes]] = None
 
 # In non-live-mode the file contents aren't updated.
 # Returning an empty diagnostic clears the diagnostic result,
@@ -295,11 +295,11 @@ def get_diagnostics(
     global tmpFile
     if live_mode and not is_saved:
         if tmpFile:
-            tmpFile = open(tmpFile.name, "w", encoding="utf-8")
+            tmpFile = open(tmpFile.name, "wb")
         else:
-            tmpFile = tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8")
+            tmpFile = tempfile.NamedTemporaryFile("wb", delete=False)
         log.info("live_mode tmpFile = %s", tmpFile.name)
-        tmpFile.write(document.source)
+        tmpFile.write(bytes(document.source, "utf-8"))
         tmpFile.close()
         args.extend(["--shadow-file", document.path, tmpFile.name])
     elif not is_saved and document.path in last_diagnostics:
