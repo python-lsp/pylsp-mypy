@@ -293,6 +293,7 @@ def get_diagnostics(
 
     if dmypy:
         dmypy_status_file = settings.get("dmypy_status_file", ".dmypy.json")
+        dmypy_timeout = int(settings.get("dmypy_timeout", 60))
 
     args = ["--show-error-end", "--no-error-summary", "--no-pretty"]
 
@@ -377,7 +378,14 @@ def get_diagnostics(
                     errors.strip(),
                 )
                 subprocess.run(
-                    ["dmypy", "--status-file", dmypy_status_file, "restart"],
+                    [
+                        "dmypy",
+                        "--status-file",
+                        dmypy_status_file,
+                        "restart",
+                        "--timeout",
+                        str(dmypy_timeout),
+                    ],
                     capture_output=True,
                     **windows_flag,
                     encoding="utf-8",
@@ -395,10 +403,19 @@ def get_diagnostics(
                     exit_status,
                     errors.strip(),
                 )
-                mypy_api.run_dmypy(["--status-file", dmypy_status_file, "restart"])
+                mypy_api.run_dmypy(
+                    ["--status-file", dmypy_status_file, "restart", "--timeout", str(dmypy_timeout)]
+                )
 
         # run to use existing daemon or restart if required
-        args = ["--status-file", dmypy_status_file, "run", "--"] + apply_overrides(args, overrides)
+        args = [
+            "--status-file",
+            dmypy_status_file,
+            "run",
+            "--timeout",
+            str(dmypy_timeout),
+            "--",
+        ] + apply_overrides(args, overrides)
         if dmypy_command:
             # dmypy exists on PATH or was provided by settings
             # -> use this dmypy

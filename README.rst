@@ -60,6 +60,11 @@ Configuration
      - ``string``
      - **Specifies which status file dmypy should use**. This modifies the ``--status-file`` option passed to ``dmypy`` given ``dmypy`` is active.
      - ``.dmypy.json``
+   * - ``dmypy_timeout``
+     - ``pylsp.plugins.pylsp_mypy.dmypy_timeout``
+     - ``string``
+     - **Specifies the inactivity timeout after which the mypy daemon will automatically shut down**.
+     - ``60``
    * - ``config_sub_paths``
      - ``pylsp.plugins.pylsp_mypy.config_sub_paths``
      - ``array`` of ``string`` items
