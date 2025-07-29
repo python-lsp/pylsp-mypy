@@ -154,7 +154,7 @@ def didSettingsChange(workspace: str, settings: Dict[str, Any]) -> None:
         settingsCache[workspace] = settings.copy()
 
 
-def match_exclude_patterns(document_path: str, exclude_patterns: list) -> bool:
+def match_exclude_patterns(document_path: str, exclude_patterns: list[str]) -> bool:
     """Check if the current document path matches any of the configures exlude patterns."""
     document_path = document_path.replace(os.sep, "/")
 
@@ -580,9 +580,9 @@ def pylsp_code_actions(
     config: Config,
     workspace: Workspace,
     document: Document,
-    range: Dict,
-    context: Dict,
-) -> List[Dict]:
+    range: Dict[str, Any],
+    context: Dict[str, Any],
+) -> List[Dict[str, Any]]:
     """
     Provide code actions to ignore errors.
 
