@@ -7,7 +7,6 @@ Created on Fri Jul 10 09:53:57 2020
 @author: Richard Kellnberger
 """
 import ast
-import atexit
 import collections
 import logging
 import os
@@ -660,10 +659,9 @@ def pylsp_code_actions(
     return actions
 
 
-@atexit.register
-def close() -> None:
+def close_tmpfile() -> None:
     """
-    Deltes the tempFile should it exist.
+    Delete the tmpFile should it exist.
 
     Returns
     -------
@@ -672,3 +670,66 @@ def close() -> None:
     """
     if tmpFile and tmpFile.name:
         os.unlink(tmpFile.name)
+
+
+def dmypy_stop(settings: dict[str, Any]) -> None:
+    """Possibly stop dmypy."""
+    dmypy = settings.get("dmypy", False)
+    if not dmypy:
+        return
+
+    status_file = settings.get("dmypy_status_file", ".dmypy.json")
+    if not os.path.exists(status_file):
+        return
+
+    dmypy_command: list[str] = get_cmd(settings, "dmypy")
+
+    if dmypy_command:
+        # dmypy exists on PATH or was provided by settings
+        # -> use this dmypy
+        completed_process = subprocess.run(
+            [*dmypy_command, "--status-file", status_file, "stop"],
+            capture_output=True,
+            **windows_flag,
+            encoding="utf-8",
+        )
+        output, errors = completed_process.stdout, completed_process.stderr
+        exit_status = completed_process.returncode
+        if exit_status != 0:
+            log.warning(
+                "failed to stop dmypy via path; exit code: %d, message: %s",
+                exit_status,
+                errors.strip(),
+            )
+            log.warning("killing dmypy via path")
+            subprocess.run(
+                [*dmypy_command, "--status-file", status_file, "kill"],
+                capture_output=True,
+                **windows_flag,
+                encoding="utf-8",
+                check=True,
+            )
+        else:
+            log.info("dmypy stopped via path: %s", output.strip())
+    else:
+        # dmypy does not exist on PATH and was not provided by settings,
+        # but must exist in the env pylsp-mypy is installed in
+        # -> use dmypy via api
+        output, errors, exit_status = mypy_api.run_dmypy(["--status-file", status_file, "stop"])
+        if exit_status != 0:
+            log.warning(
+                "failed to stop dmypy; exit code: %d, message: %s",
+                exit_status,
+                errors.strip(),
+            )
+            log.warning("killing dmypy")
+            mypy_api.run_dmypy(["--status-file", status_file, "kill"])
+        else:
+            log.info("dmypy stopped: %s", output.strip())
+
+
+@hookimpl
+def pylsp_shutdown(config: Config, workspace: Workspace) -> None:
+    log.info("shutdown requested")
+    close_tmpfile()
+    dmypy_stop(config.plugin_settings("pylsp_mypy"))
