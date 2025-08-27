@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 from configparser import ConfigParser
 from pathlib import Path
-from typing import IO, Any, Optional
+from typing import IO, Any, Optional, TypedDict
 
 try:
     import tomllib
@@ -60,11 +60,16 @@ tmpFile: Optional[IO[bytes]] = None
 # https://github.com/python-lsp/python-lsp-server/blob/v1.0.1/pylsp/plugins/pylint_lint.py#L55-L62
 last_diagnostics: dict[str, list[dict[str, Any]]] = collections.defaultdict(list)
 
+
 # Windows started opening opening a cmd-like window for every subprocess call
 # This flag prevents that.
 # This flag is new in python 3.7
 # This flag only exists on Windows
-windows_flag: dict[str, int] = (
+class WindowsFlag(TypedDict, total=False):
+    creationflags: int
+
+
+windows_flag: WindowsFlag = (
     {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}  # type: ignore
 )
 
