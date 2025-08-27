@@ -1,7 +1,6 @@
 import collections
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -28,10 +27,6 @@ TYPE_ERR_MSG_REGEX = (
 TEST_LINE = 'test_plugin.py:279:8:279:16: error: "Request" has no attribute "id"  [attr-defined]'
 TEST_LINE_NOTE = (
     'test_plugin.py:124:1:129:77: note: Use "-> None" if function does not return a value'
-)
-
-windows_flag: dict[str, int] = (
-    {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}  # type: ignore
 )
 
 
@@ -251,7 +246,7 @@ def test_option_overrides_dmypy(last_diagnostics_monkeypatch, workspace):
         "--no-pretty",
         document.path,
     ]
-    m.assert_called_with(expected, capture_output=True, **windows_flag, encoding="utf-8")
+    m.assert_called_with(expected, capture_output=True, **plugin.windows_flag, encoding="utf-8")
 
 
 def test_dmypy_status_file(tmpdir, last_diagnostics_monkeypatch, workspace):
