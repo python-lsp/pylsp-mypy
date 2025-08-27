@@ -64,7 +64,7 @@ last_diagnostics: dict[str, list[dict[str, Any]]] = collections.defaultdict(list
 # Windows started opening opening a cmd-like window for every subprocess call
 # This flag prevents that.
 # This flag is new in python 3.7
-# This flag only exists on Windows
+# This flag only exists on Windows, hence the 'type: ignore[attr-defined]' below.
 class WindowsFlag(TypedDict, total=False):
     creationflags: int
 
