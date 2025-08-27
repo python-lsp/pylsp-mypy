@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 from configparser import ConfigParser
 from pathlib import Path
-from typing import IO, Any, Dict, List, Optional
+from typing import IO, Any, Optional
 
 try:
     import tomllib
@@ -47,9 +47,9 @@ whole_line_pattern = re.compile(  # certain mypy warnings do not report start-en
 log = logging.getLogger(__name__)
 
 # A mapping from workspace path to config file path
-mypyConfigFileMap: Dict[str, Optional[str]] = {}
+mypyConfigFileMap: dict[str, Optional[str]] = {}
 
-settingsCache: Dict[str, Dict[str, Any]] = {}
+settingsCache: dict[str, dict[str, Any]] = {}
 
 tmpFile: Optional[IO[bytes]] = None
 
@@ -58,18 +58,18 @@ tmpFile: Optional[IO[bytes]] = None
 # so store a cache of last diagnostics for each file a-la the pylint plugin,
 # so we can return some potentially-stale diagnostics.
 # https://github.com/python-lsp/python-lsp-server/blob/v1.0.1/pylsp/plugins/pylint_lint.py#L55-L62
-last_diagnostics: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
+last_diagnostics: dict[str, list[dict[str, Any]]] = collections.defaultdict(list)
 
 # Windows started opening opening a cmd-like window for every subprocess call
 # This flag prevents that.
 # This flag is new in python 3.7
 # This flag only exists on Windows
-windows_flag: Dict[str, int] = (
+windows_flag: dict[str, int] = (
     {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}  # type: ignore
 )
 
 
-def parse_line(line: str, document: Optional[Document] = None) -> Optional[Dict[str, Any]]:
+def parse_line(line: str, document: Optional[Document] = None) -> Optional[dict[str, Any]]:
     """
     Return a language-server diagnostic from a line of the Mypy error report.
 
@@ -128,7 +128,7 @@ def parse_line(line: str, document: Optional[Document] = None) -> Optional[Dict[
     return diag
 
 
-def apply_overrides(args: List[str], overrides: List[Any]) -> List[str]:
+def apply_overrides(args: list[str], overrides: list[Any]) -> list[str]:
     """Replace or combine default command-line options with overrides."""
     overrides_iterator = iter(overrides)
     if True not in overrides_iterator:
@@ -140,7 +140,7 @@ def apply_overrides(args: List[str], overrides: List[Any]) -> List[str]:
     return overrides[: -(len(rest) + 1)] + args + rest
 
 
-def didSettingsChange(workspace: str, settings: Dict[str, Any]) -> None:
+def didSettingsChange(workspace: str, settings: dict[str, Any]) -> None:
     """Handle relevant changes to the settings between runs."""
     configSubPaths = settings.get("config_sub_paths", [])
     if settingsCache[workspace].get("config_sub_paths", []) != configSubPaths:
@@ -169,14 +169,14 @@ def match_exclude_patterns(document_path: str, exclude_patterns: list[str]) -> b
     return False
 
 
-def get_cmd(settings: Dict[str, Any], cmd: str) -> List[str]:
+def get_cmd(settings: dict[str, Any], cmd: str) -> list[str]:
     """
     Get the command to run from settings, falling back to searching the PATH.
     If the command is not found in the settings and is not available on the PATH, an
     empty list is returned.
     """
     command_key = f"{cmd}_command"
-    command: List[str] = settings.get(command_key, [])
+    command: list[str] = settings.get(command_key, [])
 
     if not (command and os.getenv("PYLSP_MYPY_ALLOW_DANGEROUS_CODE_EXECUTION")):
         # env var is required to allow command from settings
@@ -196,7 +196,7 @@ def get_cmd(settings: Dict[str, Any], cmd: str) -> List[str]:
 @hookimpl
 def pylsp_lint(
     config: Config, workspace: Workspace, document: Document, is_saved: bool
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Call the linter.
 
@@ -254,9 +254,9 @@ def pylsp_lint(
 def get_diagnostics(
     workspace: Workspace,
     document: Document,
-    settings: Dict[str, Any],
+    settings: dict[str, Any],
     is_saved: bool,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Lints.
 
@@ -332,7 +332,7 @@ def get_diagnostics(
         args.extend(["--incremental", "--follow-imports", settings.get("follow-imports", "silent")])
         args = apply_overrides(args, overrides)
 
-        mypy_command: List[str] = get_cmd(settings, "mypy")
+        mypy_command: list[str] = get_cmd(settings, "mypy")
 
         if mypy_command:
             # mypy exists on PATH or was provided by settings
@@ -357,7 +357,7 @@ def get_diagnostics(
         # If daemon is dead/absent, kill will no-op.
         # In either case, reset to fresh state
 
-        dmypy_command: List[str] = get_cmd(settings, "dmypy")
+        dmypy_command: list[str] = get_cmd(settings, "dmypy")
 
         if dmypy_command:
             # dmypy exists on PATH or was provided by settings
@@ -449,7 +449,7 @@ def get_diagnostics(
 
 
 @hookimpl
-def pylsp_settings(config: Config) -> Dict[str, Dict[str, Dict[str, str]]]:
+def pylsp_settings(config: Config) -> dict[str, dict[str, dict[str, str]]]:
     """
     Read the settings.
 
@@ -468,7 +468,7 @@ def pylsp_settings(config: Config) -> Dict[str, Dict[str, Dict[str, str]]]:
     return {"plugins": {"pylsp_mypy": configuration}}
 
 
-def init(workspace: str) -> Dict[str, str]:
+def init(workspace: str) -> dict[str, str]:
     """
     Find plugin and mypy config files and creates the temp file should it be used.
 
@@ -509,7 +509,7 @@ def init(workspace: str) -> Dict[str, str]:
 
 
 def findConfigFile(
-    path: str, configSubPaths: List[str], names: List[str], mypy: bool
+    path: str, configSubPaths: list[str], names: list[str], mypy: bool
 ) -> Optional[str]:
     """
     Search for a config file.
@@ -580,9 +580,9 @@ def pylsp_code_actions(
     config: Config,
     workspace: Workspace,
     document: Document,
-    range: Dict[str, Any],
-    context: Dict[str, Any],
-) -> List[Dict[str, Any]]:
+    range: dict[str, Any],
+    context: dict[str, Any],
+) -> list[dict[str, Any]]:
     """
     Provide code actions to ignore errors.
 

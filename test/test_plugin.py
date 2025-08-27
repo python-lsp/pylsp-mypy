@@ -4,7 +4,6 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict
 from unittest.mock import Mock, patch
 
 import pytest
@@ -31,7 +30,7 @@ TEST_LINE_NOTE = (
     'test_plugin.py:124:1:129:77: note: Use "-> None" if function does not return a value'
 )
 
-windows_flag: Dict[str, int] = (
+windows_flag: dict[str, int] = (
     {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}  # type: ignore
 )
 
