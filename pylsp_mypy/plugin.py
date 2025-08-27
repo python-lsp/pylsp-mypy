@@ -70,7 +70,9 @@ class WindowsFlag(TypedDict, total=False):
 
 
 windows_flag: WindowsFlag = (
-    {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}  # type: ignore
+    {"creationflags": subprocess.CREATE_NO_WINDOW}  # type: ignore[attr-defined]
+    if os.name == "nt"
+    else {}
 )
 
 
