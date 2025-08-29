@@ -55,6 +55,11 @@ Configuration
      - ``array`` of (``string`` items or ``true``)
      - **A list of alternate or supplemental command-line options**. This modifies the options passed to ``mypy`` or the mypy-specific ones passed to ``dmypy run``. When present, the special boolean member ``true`` is replaced with the command-line options that would've been passed had ``overrides`` not been specified.
      - ``[true]``
+   * - ``dmypy_log_file``
+     - ``pylsp.plugins.pylsp_mypy.dmypy_log_file``
+     - ``string``
+     - **Specifies a path for dmypy logs**. This modifies the ``--log-file`` option passed to ``dmypy`` given ``dmypy`` is active.
+     - ``None``
    * - ``dmypy_status_file``
      - ``pylsp.plugins.pylsp_mypy.dmypy_status_file``
      - ``string``

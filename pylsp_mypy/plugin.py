@@ -298,6 +298,7 @@ def get_diagnostics(
         live_mode = False
 
     if dmypy:
+        dmypy_log_file = settings.get("dmypy_log_file")
         dmypy_status_file = settings.get("dmypy_status_file", ".dmypy.json")
 
     args = ["--show-error-end", "--no-error-summary", "--no-pretty"]
@@ -404,13 +405,16 @@ def get_diagnostics(
                 mypy_api.run_dmypy(["--status-file", dmypy_status_file, "restart"])
 
         # run to use existing daemon or restart if required
-        args = ["--status-file", dmypy_status_file, "run", "--"] + apply_overrides(args, overrides)
+        runargs = ["--status-file", dmypy_status_file, "run"]
+        if dmypy_log_file is not None:
+            runargs += ["--log-file", dmypy_log_file]
+        runargs += ["--"] + apply_overrides(args, overrides)
         if dmypy_command:
             # dmypy exists on PATH or was provided by settings
             # -> use this dmypy
-            log.info("dmypy run args = %s via path", args)
+            log.info("dmypy run args = %s via path", runargs)
             completed_process = subprocess.run(
-                [*dmypy_command, *args], capture_output=True, **windows_flag, encoding="utf-8"
+                [*dmypy_command, *runargs], capture_output=True, **windows_flag, encoding="utf-8"
             )
             report = completed_process.stdout
             errors = completed_process.stderr
@@ -419,8 +423,8 @@ def get_diagnostics(
             # dmypy does not exist on PATH and was not provided by settings,
             # but must exist in the env pylsp-mypy is installed in
             # -> use dmypy via api
-            log.info("dmypy run args = %s via api", args)
-            report, errors, exit_status = mypy_api.run_dmypy(args)
+            log.info("dmypy run args = %s via api", runargs)
+            report, errors, exit_status = mypy_api.run_dmypy(runargs)
 
     log.debug("report:\n%s", report)
     log.debug("errors:\n%s", errors)
