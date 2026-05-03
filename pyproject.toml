@@ -23,7 +23,7 @@ live_mode = true
 strict = true
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 
 [[tool.mypy.overrides]]
 module = "pylsp.*"
